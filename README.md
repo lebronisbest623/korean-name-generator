@@ -66,5 +66,13 @@ var name = namer.generateCustom(trainedData);
 ```
 커스텀 데이터를 사용하실 경우 최소 500개 이상의 이름을 학습시키는 것을 권장합니다.
 
+## 포크 안내
+
+이 저장소는 [agemor/korean-name-generator](https://github.com/agemor/korean-name-generator)를 포크한 버전입니다.
+
+원본에서 추가된 기능:
+- `generateLastName()` — 성씨만 생성
+- `generateGivenName(isMale)` — 이름(성 제외)만 생성
+
 ## 라이센스
 이 프로젝트는 [MIT]() 라이센스에 따라 자유롭게 이용 가능합니다.
