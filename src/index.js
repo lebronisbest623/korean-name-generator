@@ -2,81 +2,91 @@ var trainedData = require("./trained-data.js");
 
 trainedData.firstNames = uncompressEmptyPart(trainedData.firstNames);
 
-/**
- * 랜덤한 한국 이름을 생성한다.
- * 
- * @param {boolean} isMale 
- */
-function generate(trainedDataMatrix) {
+// 요소들의 가중치에 비례한 확률로 랜덤 뽑기
+function pick(count, item) {
+    let sum = 0;
+    let selected = 0;
 
-    let ensure = (n) => n == undefined ? 0 : n;
+    for (let i = 0; i < count; i++) {
+        sum += item(i);
+    }
 
-    // 요소들의 가중치에 비례한 확률로 랜덤 뽑기
-    let pick = (count, item) => {
+    let pivot = Math.random() * sum;
 
-        let sum = 0;
-        let selected = 0;
-
-        for (let i = 0; i < count; i++) {
-            sum += item(i);
+    for (let i = 0; i < count; i++) {
+        if ((pivot -= item(i)) <= 0) {
+            selected = i;
+            break;
         }
-
-        let pivot = Math.random() * sum;
-
-        for (let i = 0; i < count; i++) {
-            if ((pivot -= item(i)) <= 0) {
-                selected = i;
-                break;
-            }
-        }
-
-        return selected;
     }
 
-    // 랜덤으로 음절 생성
-    let pickSyllable = (set) => {
-
-        let choseong = pick(19, (n) => ensure(trainedDataMatrix[set][0][n]));
-        let jungseong = pick(21, (n) => ensure(trainedDataMatrix[set][1][choseong * 21 + n]));
-        let jongseong = pick(28, (n) => ensure(trainedDataMatrix[set][2][jungseong * 28 + n]) * ensure(trainedDataMatrix[set][3][choseong * 28 + n]));
-
-        return constructFromJamoIndex([choseong, jungseong, jongseong]);
-    }
-
-    let pickLastName = () => {
-
-        let lastNameIndex = pick(trainedData.lastNames.length, (n) => trainedData.lastNameFrequency[n]);
-
-        return String.fromCharCode(trainedData.lastNames[lastNameIndex] + 0xAC00);
-    }
-
-    return pickLastName() + pickSyllable(0) + pickSyllable(1);
+    return selected;
 }
 
+// 랜덤으로 음절 생성
+function pickSyllable(trainedDataMatrix, set) {
+    let ensure = (n) => n == undefined ? 0 : n;
+
+    let choseong = pick(19, (n) => ensure(trainedDataMatrix[set][0][n]));
+    let jungseong = pick(21, (n) => ensure(trainedDataMatrix[set][1][choseong * 21 + n]));
+    let jongseong = pick(28, (n) => ensure(trainedDataMatrix[set][2][jungseong * 28 + n]) * ensure(trainedDataMatrix[set][3][choseong * 28 + n]));
+
+    return constructFromJamoIndex([choseong, jungseong, jongseong]);
+}
+
+function pickLastName() {
+    let lastNameIndex = pick(trainedData.lastNames.length, (n) => trainedData.lastNameFrequency[n]);
+    return String.fromCharCode(trainedData.lastNames[lastNameIndex] + 0xAC00);
+}
+
+function pickGivenName(trainedDataMatrix) {
+    return pickSyllable(trainedDataMatrix, 0) + pickSyllable(trainedDataMatrix, 1);
+}
+
+/**
+ * 랜덤한 한국 이름을 생성한다. (성 + 이름)
+ *
+ * @param {array} trainedDataMatrix
+ */
+function generate(trainedDataMatrix) {
+    return pickLastName() + pickGivenName(trainedDataMatrix);
+}
+
+/**
+ * 랜덤한 한국 이름을 생성한다. (성 + 이름)
+ *
+ * @param {boolean} isMale
+ */
 function generateByDefault(isMale = true) {
     return generate(trainedData.firstNames[isMale ? 0 : 1]);
 }
 
 /**
+ * 랜덤한 한국 성씨만 생성한다.
+ */
+function generateLastName() {
+    return pickLastName();
+}
+
+/**
+ * 랜덤한 한국 이름(성 제외)만 생성한다.
+ *
+ * @param {boolean} isMale
+ */
+function generateGivenName(isMale = true) {
+    return pickGivenName(trainedData.firstNames[isMale ? 0 : 1]);
+}
+
+/**
  * 이름 리스트를 토대로 통계적 학습 데이터를 생성한다.
- * 
- * @param {array} nameList 
+ *
+ * @param {array} nameList
  */
 function train(nameList, compress = false) {
 
     let trainedNameData = [
-        [
-            [],
-            [],
-            [],
-            []
-        ],
-        [
-            [],
-            [],
-            [],
-            []
-        ]
+        [[], [], [], []],
+        [[], [], [], []]
     ];
 
     let increase = (array, index) => {
@@ -109,8 +119,8 @@ function train(nameList, compress = false) {
 
 /**
  * 빈 공간이 많은 배열을 압축한다.
- * 
- * @param {array} array 
+ *
+ * @param {array} array
  */
 function compressEmptyPart(array) {
 
@@ -137,8 +147,8 @@ function compressEmptyPart(array) {
 
 /**
  * 압축된 배열을 원래 상태로 되돌린다.
- * 
- * @param {array} array 
+ *
+ * @param {array} array
  */
 function uncompressEmptyPart(array) {
 
@@ -166,17 +176,17 @@ function uncompressEmptyPart(array) {
 
 /**
  * 자모 배열로부터 음절을 생성한다.
- * 
- * @param {array} jamoIndex 
+ *
+ * @param {array} jamoIndex
  */
 function constructFromJamoIndex(jamoIndex) {
     return String.fromCharCode(0xAC00 + 28 * 21 * jamoIndex[0] + 28 * jamoIndex[1] + jamoIndex[2]);
 }
 
 /**
- * 음절로부터 자보 배열을 생성한다.
- * 
- * @param {string} syllable 
+ * 음절로부터 자모 배열을 생성한다.
+ *
+ * @param {string} syllable
  */
 function resolveToJamoIndex(syllable) {
 
@@ -198,5 +208,7 @@ function resolveToJamoIndex(syllable) {
 module.exports = {
     generate: generateByDefault,
     generateCustom: generate,
+    generateLastName: generateLastName,
+    generateGivenName: generateGivenName,
     train: train
 };
