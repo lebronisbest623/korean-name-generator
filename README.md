@@ -15,11 +15,18 @@ npm install korean-name-generator
 ```javascript
 var namer = require("korean-name-generator");
 
-// 남자 이름 생성
+// 남자 이름 생성 (성 + 이름)
 var maleName = namer.generate(true);
 
-// 여자 이름 생성
+// 여자 이름 생성 (성 + 이름)
 var femaleName = namer.generate(false);
+
+// 성씨만 생성
+var lastName = namer.generateLastName();
+
+// 이름만 생성 (성 제외)
+var maleGivenName = namer.generateGivenName(true);
+var femaleGivenName = namer.generateGivenName(false);
 ```
 
 ### 작명 예제
